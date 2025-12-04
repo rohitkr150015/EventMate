@@ -98,11 +98,27 @@ The application will be available at `http://localhost:5000`
 
 ## Key Features
 
-### 1. User Authentication
+### 1. User Authentication (Separate Login Systems)
+The platform has three separate authentication flows:
+
+#### Regular Users
+- **Login**: `/login`
+- **Register**: `/register`
 - Email/password registration and login
-- Secure password hashing with bcrypt (12 rounds)
-- Session-based authentication with HttpOnly cookies
-- Role-based access (user, vendor, admin)
+- Can create events and book vendors
+
+#### Vendors (Separate Registration)
+- **Login**: `/vendor/login`
+- **Register**: `/vendor/register`
+- Vendors register with business information
+- Automatically creates user account + vendor profile
+- Can manage bookings and services
+
+#### Admin (Login Only - No Public Registration)
+- **Login**: `/admin/login`
+- Admins cannot register publicly - must be created via database
+- Default admin: `admin@eventmate.com` / `Admin@123456`
+- Has full platform management access
 
 ### 2. Event Planning
 - Create events with wizard interface
@@ -115,15 +131,17 @@ The application will be available at `http://localhost:5000`
 - Payment processing with Stripe (optional)
 
 ### 4. Admin Panel
-- User management
-- Vendor verification
-- Platform statistics
+- User management (change roles)
+- Vendor verification (approve/revoke)
+- Platform statistics and revenue tracking
 
 ## Recent Changes (December 2025)
-- **Migrated to local authentication**: Replaced Replit OIDC with email/password login
+- **Separated authentication systems**: Users, vendors, and admins now have dedicated login/registration pages
+- **Vendor registration flow**: Vendors register with business details and get approved by admin
+- **Admin-only login**: Admin accounts cannot be registered publicly for security
 - **Applied Positivus design theme**: Dark background with lime green accents
 - **Made application portable**: Can now run on any local machine with PostgreSQL
-- **Added login/register pages**: Modern auth flow with form validation
+- **Added comprehensive auth pages**: Modern auth flow with form validation for all user types
 
 ## Environment Variables Reference
 
@@ -138,11 +156,19 @@ The application will be available at `http://localhost:5000`
 
 ## API Routes
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login with email/password
+### User Authentication
+- `POST /api/auth/register` - Register new user (customers)
+- `POST /api/auth/login` - User login with email/password
 - `POST /api/auth/logout` - Logout current session
 - `GET /api/auth/user` - Get current authenticated user
+
+### Vendor Authentication
+- `POST /api/auth/vendor/register` - Register as vendor (creates user + vendor profile)
+- `POST /api/auth/vendor/login` - Vendor login (validates vendor role)
+
+### Admin Authentication
+- `POST /api/auth/admin/login` - Admin login (validates admin role)
+- `POST /api/admin/create` - Create new admin (requires existing admin)
 
 ### Events
 - `GET /api/events` - Get user's events

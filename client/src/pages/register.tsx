@@ -198,6 +198,17 @@ export default function Register() {
                 Sign in
               </Button>
             </div>
+            <div className="mt-2 text-center text-sm">
+              <span className="text-muted-foreground">Want to list your business? </span>
+              <Button
+                variant="link"
+                className="p-0 h-auto font-semibold text-purple-600"
+                onClick={() => setLocation("/vendor/register")}
+                data-testid="link-vendor-register"
+              >
+                Become a Vendor
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

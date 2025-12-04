@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, ArrowLeft, Loader2 } from "lucide-react";
+import { Shield, ArrowLeft, Loader2 } from "lucide-react";
 
-export default function Login() {
+export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -17,7 +17,7 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -30,8 +30,8 @@ export default function Login() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({ title: "Welcome back!", description: "You have successfully logged in." });
-      setLocation("/");
+      toast({ title: "Welcome back, Admin!", description: "You have successfully logged in." });
+      setLocation("/admin");
     },
     onError: (error: Error) => {
       toast({ 
@@ -49,7 +49,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-500/10 via-background to-background" />
       
       <div className="relative w-full max-w-md">
         <Button
@@ -61,29 +61,29 @@ export default function Login() {
           Back to home
         </Button>
 
-        <Card className="border-2 border-primary/20 bg-card/80 backdrop-blur">
+        <Card className="border-2 border-red-500/20 bg-card/80 backdrop-blur">
           <CardHeader className="text-center pb-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-primary-foreground" />
+            <div className="w-16 h-16 rounded-2xl bg-red-600 flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+            <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
             <CardDescription>
-              Sign in to your EventMate account
+              Access the EventMate administration panel
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Admin Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="admin@eventmate.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="h-12"
-                  data-testid="input-email"
+                  data-testid="input-admin-email"
                   autoComplete="email"
                 />
               </div>
@@ -97,15 +97,15 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="h-12"
-                  data-testid="input-password"
+                  data-testid="input-admin-password"
                   autoComplete="current-password"
                 />
               </div>
               <Button 
                 type="submit" 
-                className="w-full h-12 text-base font-semibold"
+                className="w-full h-12 text-base font-semibold bg-red-600 hover:bg-red-700"
                 disabled={loginMutation.isPending}
-                data-testid="button-submit-login"
+                data-testid="button-submit-admin-login"
               >
                 {loginMutation.isPending ? (
                   <>
@@ -113,32 +113,14 @@ export default function Login() {
                     Signing in...
                   </>
                 ) : (
-                  "Sign In"
+                  "Sign In as Admin"
                 )}
               </Button>
             </form>
             
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <Button
-                variant="link"
-                className="p-0 h-auto font-semibold text-primary"
-                onClick={() => setLocation("/register")}
-                data-testid="link-register"
-              >
-                Sign up
-              </Button>
-            </div>
-            <div className="mt-2 text-center text-sm">
-              <span className="text-muted-foreground">Are you a vendor? </span>
-              <Button
-                variant="link"
-                className="p-0 h-auto font-semibold text-purple-600"
-                onClick={() => setLocation("/vendor/login")}
-                data-testid="link-vendor-login"
-              >
-                Vendor Login
-              </Button>
+            <div className="mt-6 p-4 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+              <p className="font-medium mb-1">Note:</p>
+              <p>Admin accounts cannot be created through registration. Please contact the system administrator if you need admin access.</p>
             </div>
           </CardContent>
         </Card>

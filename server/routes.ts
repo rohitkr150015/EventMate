@@ -14,6 +14,18 @@ const registerSchema = z.object({
   lastName: z.string().optional(),
 });
 
+const vendorRegisterSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  phone: z.string().optional(),
+  businessName: z.string().min(2, "Business name is required"),
+  category: z.enum(['venue', 'catering', 'decoration', 'photography', 'entertainment', 'florist', 'cake', 'transport', 'other']),
+  description: z.string().optional(),
+  location: z.string().optional(),
+});
+
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
@@ -102,6 +114,156 @@ export async function registerRoutes(
     }
     const { passwordHash: _, ...safeUser } = user as any;
     res.json(safeUser);
+  });
+
+  // Vendor Registration - Creates both user account and vendor profile
+  app.post("/api/auth/vendor/register", async (req: Request, res: Response) => {
+    try {
+      const data = vendorRegisterSchema.parse(req.body);
+      
+      const existingUser = await storage.getUserByEmail(data.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      const passwordHash = await hashPassword(data.password);
+      
+      // Create user with vendor role
+      const user = await storage.createUser({
+        email: data.email,
+        passwordHash,
+        firstName: data.firstName || null,
+        lastName: data.lastName || null,
+        phone: data.phone || null,
+        role: 'vendor',
+      });
+
+      // Create vendor profile
+      const vendor = await storage.createVendor({
+        userId: user.id,
+        businessName: data.businessName,
+        category: data.category,
+        description: data.description || null,
+        location: data.location || null,
+        isVerified: false,
+        isActive: true,
+      });
+
+      req.session.userId = user.id;
+      
+      const { passwordHash: _, ...safeUser } = user as any;
+      res.status(201).json({ user: safeUser, vendor });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Vendor registration error:", error);
+      res.status(500).json({ message: "Vendor registration failed" });
+    }
+  });
+
+  // Vendor Login - Same as regular login but validates vendor role
+  app.post("/api/auth/vendor/login", async (req: Request, res: Response) => {
+    try {
+      const data = loginSchema.parse(req.body);
+      
+      const user = await storage.getUserByEmail(data.email);
+      if (!user || !user.passwordHash) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      const isValid = await verifyPassword(data.password, user.passwordHash);
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      if (user.role !== 'vendor') {
+        return res.status(403).json({ message: "This account is not registered as a vendor. Please use the vendor registration page." });
+      }
+
+      const vendor = await storage.getVendorByUserId(user.id);
+      if (!vendor) {
+        return res.status(403).json({ message: "Vendor profile not found. Please contact support." });
+      }
+
+      req.session.userId = user.id;
+      
+      const { passwordHash: _, ...safeUser } = user as any;
+      res.json({ user: safeUser, vendor });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Vendor login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Admin Login - Only allows admin role
+  app.post("/api/auth/admin/login", async (req: Request, res: Response) => {
+    try {
+      const data = loginSchema.parse(req.body);
+      
+      const user = await storage.getUserByEmail(data.email);
+      if (!user || !user.passwordHash) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const isValid = await verifyPassword(data.password, user.passwordHash);
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      if (user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied. Admin privileges required." });
+      }
+
+      req.session.userId = user.id;
+      
+      const { passwordHash: _, ...safeUser } = user as any;
+      res.json(safeUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Admin create route - Only accessible by existing admins
+  app.post("/api/admin/create", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const currentUser = (req as any).user;
+      if (currentUser.role !== 'admin') {
+        return res.status(403).json({ message: "Only admins can create other admins" });
+      }
+
+      const data = registerSchema.parse(req.body);
+      
+      const existingUser = await storage.getUserByEmail(data.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      const passwordHash = await hashPassword(data.password);
+      const newAdmin = await storage.createUser({
+        email: data.email,
+        passwordHash,
+        firstName: data.firstName || null,
+        lastName: data.lastName || null,
+        role: 'admin',
+      });
+
+      const { passwordHash: _, ...safeUser } = newAdmin as any;
+      res.status(201).json(safeUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Admin creation error:", error);
+      res.status(500).json({ message: "Failed to create admin" });
+    }
   });
 
   // Event routes

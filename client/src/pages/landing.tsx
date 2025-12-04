@@ -92,8 +92,14 @@ export default function Landing() {
             </div>
             <span className="text-xl font-bold">EventMate</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <ThemeToggle />
+            <Link href="/vendor/login">
+              <Button variant="ghost" size="sm" data-testid="button-vendor-login">Vendor Login</Button>
+            </Link>
+            <Link href="/admin/login">
+              <Button variant="ghost" size="sm" data-testid="button-admin-login">Admin</Button>
+            </Link>
             <Link href="/login">
               <Button variant="ghost" data-testid="button-login">Sign In</Button>
             </Link>

@@ -13,6 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import VendorLogin from "@/pages/vendor-login";
+import VendorRegister from "@/pages/vendor-register";
+import AdminLogin from "@/pages/admin-login";
 import Dashboard from "@/pages/dashboard";
 import EventsPage from "@/pages/events";
 import EventWizard from "@/pages/event-wizard";
@@ -90,6 +93,9 @@ function AppContent() {
       <Switch>
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
+        <Route path="/vendor/login" component={VendorLogin} />
+        <Route path="/vendor/register" component={VendorRegister} />
+        <Route path="/admin/login" component={AdminLogin} />
         <Route component={Landing} />
       </Switch>
     );
