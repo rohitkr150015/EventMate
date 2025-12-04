@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: eventmate_db
+    restart: always
+    environment:
+      POSTGRES_USER: eventmate
+      POSTGRES_PASSWORD: eventmatepass
+      POSTGRES_DB: eventmate
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./server
+    container_name: eventmate_backend
+    restart: always
+    environment:
+      DATABASE_URL: postgres://eventmate:eventmatepass@db:5432/eventmate
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build: ./client
+    container_name: eventmate_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+
+volumes:
+  db_data:
