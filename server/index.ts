@@ -95,7 +95,8 @@ async function initStripe() {
         await WebhookHandlers.processWebhook(req.body as Buffer, sig, uuid);
 
         res.status(200).json({ received: true });
-      } catch (error: any) {
+      }
+      catch (error: any) {
         log(`Webhook error: ${error.message}`, 'stripe');
         res.status(400).json({ error: 'Webhook processing error' });
       }

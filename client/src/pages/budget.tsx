@@ -12,19 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  IndianRupee, 
-  TrendingUp, 
-  TrendingDown,
-  PieChart,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
-  Building,
-  UtensilsCrossed,
-  Palette,
-  Camera,
-  Music
+import {
+    IndianRupee,
+    TrendingUp,
+    TrendingDown,
+    PieChart,
+    ArrowUpRight,
+    ArrowDownRight,
+    Calendar,
+    Building,
+    UtensilsCrossed,
+    Palette,
+    Camera,
+    Music, DollarSign
 } from "lucide-react";
 import {
   ResponsiveContainer,
