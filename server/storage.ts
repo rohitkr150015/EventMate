@@ -43,6 +43,7 @@ export interface IStorage {
   getEventsByUserId(userId: string): Promise<Event[]>;
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: string, event: Partial<InsertEvent>): Promise<Event | undefined>;
+  updateEventSpentAmount(id: string, spentAmount: string): Promise<Event | undefined>;
   deleteEvent(id: string): Promise<boolean>;
   getAllEvents(): Promise<Event[]>;
 
@@ -183,6 +184,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(events)
       .set({ ...event, updatedAt: new Date() })
+      .where(eq(events.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateEventSpentAmount(id: string, spentAmount: string): Promise<Event | undefined> {
+    const [updated] = await db
+      .update(events)
+      .set({ spentAmount, updatedAt: new Date() })
       .where(eq(events.id, id))
       .returning();
     return updated;

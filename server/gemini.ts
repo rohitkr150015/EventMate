@@ -1,13 +1,48 @@
 import { GoogleGenAI } from "@google/genai";
+import type { Vendor } from "@shared/schema";
 
 // Gemini AI integration for EventMate
 // Uses gemini-2.5-flash for fast recommendations
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
+// Helper to format vendor data for AI context
+function formatVendorsForAI(vendors: Vendor[]): string {
+  if (!vendors || vendors.length === 0) {
+    return "No vendors available in the system.";
+  }
+  
+  const groupedVendors: Record<string, Vendor[]> = {};
+  vendors.forEach(v => {
+    if (!groupedVendors[v.category]) {
+      groupedVendors[v.category] = [];
+    }
+    groupedVendors[v.category].push(v);
+  });
+  
+  let vendorList = "AVAILABLE VENDORS IN OUR PLATFORM:\n";
+  for (const [category, categoryVendors] of Object.entries(groupedVendors)) {
+    vendorList += `\n${category.toUpperCase()}:\n`;
+    categoryVendors.forEach(v => {
+      const priceRange = v.priceRange as { min?: number; max?: number } | null;
+      const priceStr = priceRange 
+        ? `Rs. ${priceRange.min?.toLocaleString('en-IN')} - Rs. ${priceRange.max?.toLocaleString('en-IN')}`
+        : "Contact for pricing";
+      vendorList += `  - ${v.businessName} (ID: ${v.id})
+    Location: ${v.location || 'Not specified'}
+    Rating: ${v.rating}/5 (${v.reviewCount} reviews)
+    Price Range: ${priceStr}
+    ${v.isVerified ? '(Verified Vendor)' : ''}
+`;
+    });
+  }
+  return vendorList;
+}
+
 export interface VendorRecommendation {
   category: string;
   name: string;
+  vendorId?: string | null;
   description: string;
   estimatedCost: number;
   priority: string;
@@ -45,27 +80,40 @@ export async function getEventRecommendations(
   guestCount: number,
   location: string,
   date: string,
-  theme?: string
+  theme?: string,
+  availableVendors?: Vendor[]
 ): Promise<AIRecommendationResponse> {
-  const prompt = `You are an expert event planner. Generate comprehensive recommendations for the following event:
+  const vendorContext = availableVendors && availableVendors.length > 0 
+    ? formatVendorsForAI(availableVendors)
+    : "";
+
+  const prompt = `You are an expert event planner for EventMate, an Indian event planning platform. Generate comprehensive recommendations for the following event:
 
 Event Type: ${eventType}
-Budget: $${budget}
+Budget: Rs. ${budget.toLocaleString('en-IN')} (Indian Rupees)
 Guest Count: ${guestCount}
 Location: ${location}
 Date: ${date}
 ${theme ? `Theme: ${theme}` : ''}
+
+${vendorContext ? `
+IMPORTANT: You MUST recommend vendors from the following list of available vendors on our platform. 
+Only recommend vendors that exist in this list. Use their exact business names.
+
+${vendorContext}
+` : ''}
 
 Please provide a JSON response with the following structure:
 {
   "vendorRecommendations": [
     {
       "category": "venue|catering|decoration|photography|entertainment|florist|cake|transport",
-      "name": "Suggested vendor type name",
-      "description": "Brief description of what to look for",
-      "estimatedCost": number (in dollars),
+      "name": "Exact business name from available vendors list OR general vendor type if no match",
+      "vendorId": "ID from the vendors list if recommending a specific vendor, null otherwise",
+      "description": "Brief description of what they offer or what to look for",
+      "estimatedCost": number (in Indian Rupees),
       "priority": "essential|recommended|optional",
-      "reason": "Why this is recommended"
+      "reason": "Why this vendor/category is recommended for this event"
     }
   ],
   "schedule": [
@@ -86,14 +134,19 @@ Please provide a JSON response with the following structure:
     {
       "category": "Category name",
       "percentage": number (0-100),
-      "estimatedAmount": number,
+      "estimatedAmount": number (in Indian Rupees),
       "tips": "Budget optimization tip"
     }
   ],
-  "tips": ["General planning tips for this event type"]
+  "tips": ["General planning tips for this event type in India"]
 }
 
-Ensure the total budget breakdown adds up to 100% and estimated costs align with the provided budget. Provide at least 5 vendor recommendations, 3 schedule phases with multiple tasks each, and 5 budget categories.`;
+IMPORTANT: 
+- All costs should be in Indian Rupees (Rs.)
+- If vendors are available on the platform, PRIORITIZE recommending them by name
+- Ensure the total budget breakdown adds up to 100% and estimated costs align with the provided budget
+- Provide at least 5 vendor recommendations, 3 schedule phases with multiple tasks each, and 5 budget categories
+- Consider Indian wedding/event customs and preferences`;
 
   try {
     const response = await ai.models.generateContent({

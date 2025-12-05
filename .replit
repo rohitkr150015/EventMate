@@ -23,10 +23,6 @@ localPort = 35943
 externalPort = 3001
 
 [[ports]]
-localPort = 40419
-externalPort = 3003
-
-[[ports]]
 localPort = 41417
 externalPort = 3002
 
@@ -57,3 +53,8 @@ waitForPort = 5000
 [agent]
 integrations = ["javascript_gemini:1.0.0", "javascript_database:1.0.0", "javascript_log_in_with_replit:1.0.0", "stripe:1.0.0"]
 expertMode = true
+
+[userenv]
+
+[userenv.shared]
+GEMINI_API_KEY = "AIzaSyBVUSUiL74-TYPHRAh9Y8ukfF63vK2q1WY"

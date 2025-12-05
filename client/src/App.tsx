@@ -28,6 +28,7 @@ import AdminPanel from "@/pages/admin";
 import VendorDashboard from "@/pages/vendor-dashboard";
 import PaymentSuccess from "@/pages/payment-success";
 import PaymentCancel from "@/pages/payment-cancel";
+import EventEdit from "@/pages/event-edit";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRouter() {
@@ -36,6 +37,7 @@ function AuthenticatedRouter() {
       <Route path="/" component={Dashboard} />
       <Route path="/events" component={EventsPage} />
       <Route path="/events/new" component={EventWizard} />
+      <Route path="/events/:id/edit" component={EventEdit} />
       <Route path="/events/:id" component={EventDetail} />
       <Route path="/vendors" component={Vendors} />
       <Route path="/vendors/:id" component={VendorDetail} />

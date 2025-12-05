@@ -1,8 +1,27 @@
 import Stripe from 'stripe';
 
 let connectionSettings: any;
+let cachedCredentials: { publishableKey: string; secretKey: string } | null = null;
 
 async function getCredentials() {
+  // Return cached credentials if available
+  if (cachedCredentials) {
+    return cachedCredentials;
+  }
+
+  // First, check for local environment variables (for local development)
+  const localPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+  const localSecretKey = process.env.STRIPE_SECRET_KEY;
+  
+  if (localPublishableKey && localSecretKey) {
+    cachedCredentials = {
+      publishableKey: localPublishableKey,
+      secretKey: localSecretKey,
+    };
+    return cachedCredentials;
+  }
+
+  // Fall back to Replit connector system
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -10,8 +29,8 @@ async function getCredentials() {
       ? 'depl ' + process.env.WEB_REPL_RENEWAL
       : null;
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  if (!xReplitToken || !hostname) {
+    throw new Error('Stripe credentials not found. Set STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY environment variables for local development.');
   }
 
   const connectorName = 'stripe';
@@ -38,10 +57,12 @@ async function getCredentials() {
     throw new Error(`Stripe ${targetEnvironment} connection not found`);
   }
 
-  return {
+  cachedCredentials = {
     publishableKey: connectionSettings.settings.publishable,
     secretKey: connectionSettings.settings.secret,
   };
+  
+  return cachedCredentials;
 }
 
 export async function getUncachableStripeClient() {

@@ -44,10 +44,12 @@ import {
   UtensilsCrossed,
   Palette,
   Camera,
-  Music
+  Music,
+  CreditCard,
+  Loader2
 } from "lucide-react";
 import { format, isAfter, isBefore } from "date-fns";
-import type { Event, EventTask, Booking, Vendor } from "@shared/schema";
+import type { Event, EventTask, Booking, Vendor, Payment } from "@shared/schema";
 import { useState } from "react";
 
 const statusColors: Record<string, string> = {
@@ -122,6 +124,38 @@ export default function EventDetail() {
       navigate("/");
     },
   });
+
+  const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
+  
+  const paymentMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      setPayingBookingId(bookingId);
+      const response = await apiRequest("POST", "/api/checkout/booking", { bookingId });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: () => {
+      toast({ 
+        title: "Payment Error", 
+        description: "Failed to initiate payment. Please try again.",
+        variant: "destructive" 
+      });
+      setPayingBookingId(null);
+    },
+  });
+
+  const { data: payments } = useQuery<Payment[]>({
+    queryKey: ["/api/payments"],
+  });
+
+  const getBookingPaymentStatus = (bookingId: string) => {
+    const payment = payments?.find(p => p.bookingId === bookingId && p.status === 'completed');
+    return payment ? 'paid' : 'unpaid';
+  };
 
   if (isLoading) {
     return (
@@ -436,30 +470,66 @@ export default function EventDetail() {
 
           {bookings && bookings.length > 0 ? (
             <div className="grid md:grid-cols-2 gap-4">
-              {bookings.map((booking) => (
-                <Card key={booking.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold">{booking.serviceName}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {booking.vendor?.businessName || "Vendor"}
-                        </p>
+              {bookings.map((booking) => {
+                const isPaid = getBookingPaymentStatus(booking.id) === 'paid';
+                const canPay = (booking.status === 'pending' || booking.status === 'accepted') && !isPaid;
+                
+                return (
+                  <Card key={booking.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-semibold">{booking.serviceName}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {booking.vendor?.businessName || "Vendor"}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          {isPaid && (
+                            <Badge variant="default" className="bg-green-600">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Paid
+                            </Badge>
+                          )}
+                          <Badge variant={
+                            booking.status === "accepted" ? "default" :
+                            booking.status === "pending" ? "secondary" : "destructive"
+                          }>
+                            {booking.status}
+                          </Badge>
+                        </div>
                       </div>
-                      <Badge variant={
-                        booking.status === "accepted" ? "default" :
-                        booking.status === "pending" ? "secondary" : "destructive"
-                      }>
-                        {booking.status}
-                      </Badge>
-                    </div>
-                    <div className="mt-3 pt-3 border-t flex justify-between text-sm">
-                      <span className="text-muted-foreground">Amount</span>
-                      <span className="font-semibold">₹{Number(booking.amount).toLocaleString('en-IN')}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="mt-3 pt-3 border-t flex justify-between items-center">
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Amount: </span>
+                          <span className="font-semibold">₹{Number(booking.amount).toLocaleString('en-IN')}</span>
+                        </div>
+                        {canPay && (
+                          <Button
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => paymentMutation.mutate(booking.id)}
+                            disabled={paymentMutation.isPending && payingBookingId === booking.id}
+                            data-testid={`button-pay-booking-${booking.id}`}
+                          >
+                            {paymentMutation.isPending && payingBookingId === booking.id ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard className="w-4 h-4" />
+                                Pay Now
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <Card>

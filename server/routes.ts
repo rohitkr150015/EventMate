@@ -494,13 +494,18 @@ export async function registerRoutes(
   app.post("/api/ai/recommendations", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { eventType, budget, guestCount, location, date, theme } = req.body;
+      
+      // Fetch all available vendors to provide context to AI
+      const availableVendors = await storage.getAllVendors();
+      
       const recommendations = await getEventRecommendations(
         eventType,
         budget,
         guestCount,
         location,
         date,
-        theme
+        theme,
+        availableVendors
       );
       res.json(recommendations);
     } catch (error) {
@@ -708,9 +713,7 @@ export async function registerRoutes(
         if (event) {
           const currentSpent = parseFloat(event.spentAmount || '0');
           const newSpent = currentSpent + parseFloat(booking.amount);
-          await storage.updateEvent(booking.eventId, { 
-            spentAmount: newSpent.toString() as any 
-          });
+          await storage.updateEventSpentAmount(booking.eventId, newSpent.toString());
         }
 
         res.json({ success: true, paymentStatus: 'paid' });
