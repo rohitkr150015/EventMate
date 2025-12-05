@@ -142,6 +142,9 @@ The platform has three separate authentication flows:
 - **Applied Positivus design theme**: Dark background with lime green accents
 - **Made application portable**: Can now run on any local machine with PostgreSQL
 - **Added comprehensive auth pages**: Modern auth flow with form validation for all user types
+- **Enhanced AI recommendations**: Gemini AI now uses actual vendor data from database for personalized recommendations
+- **Payment integration**: Added "Pay Now" button for accepted bookings with Stripe checkout and automatic budget tracking
+- **Improved local development**: Stripe client now supports both Replit connectors and standard environment variables
 
 ## Environment Variables Reference
 
