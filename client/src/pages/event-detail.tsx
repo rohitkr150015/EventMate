@@ -130,12 +130,19 @@ export default function EventDetail() {
   const paymentMutation = useMutation({
     mutationFn: async (bookingId: string) => {
       setPayingBookingId(bookingId);
-      const response = await apiRequest("POST", "/api/checkout/booking", { bookingId });
-      return response.json();
+      const data = await apiRequest("POST", "/api/checkout/booking", { bookingId });
+      return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        toast({ 
+          title: "Payment Error", 
+          description: "No payment URL received.",
+          variant: "destructive" 
+        });
+        setPayingBookingId(null);
       }
     },
     onError: () => {
